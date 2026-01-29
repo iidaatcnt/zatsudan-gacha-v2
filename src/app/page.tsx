@@ -1,65 +1,136 @@
-import Image from "next/image";
+
+'use client';
+
+import { useState } from 'react';
+import { useGacha } from '@/hooks/useGacha';
+import { CategorySelector } from '@/components/CategorySelector';
+import { CategoryFilter } from '@/types';
 
 export default function Home() {
+  const [category, setCategory] = useState<CategoryFilter>('all');
+  const {
+    isSpinning,
+    result,
+    error,
+    historyItems,
+    spin
+  } = useGacha();
+
+  const handleSpin = () => {
+    spin(category);
+  };
+
+  // バッジの色判定ヘルパー
+  const getBadgeColor = (cat: string) => {
+    if (cat.includes('貯める')) return 'bg-red-500/20 text-red-300 border-red-500/40';
+    if (cat.includes('稼ぐ')) return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+    if (cat.includes('増やす')) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+    if (cat.includes('守る')) return 'bg-violet-500/20 text-violet-300 border-violet-500/40';
+    if (cat.includes('使う')) return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    if (cat.includes('リベ')) return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
+    return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
+      {/* Background Globes */}
+      <div className="background-globes">
+        <div className="globe globe-1"></div>
+        <div className="globe globe-2"></div>
+        <div className="globe globe-3"></div>
+      </div>
+
+      <div className="w-full max-w-md flex flex-col gap-6">
+
+        {/* Header */}
+        <header className="text-center">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none mb-2 font-en">
+            ZATSUDAN<br />
+            <span className="accent-text">GACHA v2</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-slate-400 text-xs tracking-[0.2em] font-en uppercase">
+            Anti-Gravity Edition (Next.js)
           </p>
+        </header>
+
+        {/* Machine Card */}
+        <div className="bg-[var(--color-card-bg)] backdrop-blur-md border border-[var(--color-card-border)] rounded-3xl p-6 md:p-8 shadow-xl flex flex-col gap-6">
+
+          {/* Display Window */}
+          <div className="bg-black/30 border border-white/5 rounded-2xl p-8 min-h-[220px] flex flex-col items-center justify-center text-center relative overflow-hidden transition-all">
+
+            {/* Status Badge */}
+            <div className={`
+              mb-4 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border transition-all duration-300
+              ${isSpinning ? 'bg-white/10 text-white border-white/20' :
+                error ? 'bg-red-500/20 text-red-500 border-red-500/50' :
+                  result ? getBadgeColor(result.category) :
+                    'bg-white/10 text-slate-400 border-white/10'}
+            `}>
+              {isSpinning ? 'CHOOSING...' : error ? 'ERROR' : result ? result.category : 'READY'}
+            </div>
+
+            {/* Content Text */}
+            <div className={`
+              text-xl md:text-2xl font-bold leading-relaxed transition-all duration-500
+              ${isSpinning ? 'opacity-50 scale-95 blur-[2px]' : 'opacity-100 scale-100 blur-0'}
+              ${result ? 'animate-[popIn_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)]' : ''}
+            `}>
+              {error ? (
+                <span className="text-red-400 text-base font-normal">{error}</span>
+              ) : result ? (
+                result.text
+              ) : (
+                <span className="text-slate-500 text-base font-normal">
+                  ボタンを押して<br />話題をスキャン...
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div>
+            <CategorySelector selected={category} onSelect={setCategory} disabled={isSpinning} />
+
+            <button
+              onClick={handleSpin}
+              disabled={isSpinning}
+              className="group relative w-full py-4 rounded-2xl btn-gradient text-white font-bold text-lg tracking-wide shadow-lg shadow-purple-500/30 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/50 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isSpinning ? '選定中...' : '話題を生成する'}
+              </span>
+              {/* Shine Effect */}
+              <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-[shine_6s_infinite]" />
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {/* History Section */}
+        {historyItems.length > 0 && (
+          <section className="bg-[var(--color-card-bg)] backdrop-blur-sm border border-[var(--color-card-border)] rounded-3xl p-6">
+            <h2 className="text-xs uppercase tracking-wider text-slate-500 mb-4 font-en">History</h2>
+            <ul className="flex flex-col gap-3">
+              {historyItems.map((item, index) => (
+                <li
+                  key={`${item.id}-${index}`}
+                  className={`
+                    flex justify-between items-center p-3 rounded-xl bg-white/5 border-l-2 text-sm
+                    animate-[popIn_0.3s_ease-out]
+                    ${getBadgeColor(item.category).replace('text-', 'border-l-')}
+                  `}
+                >
+                  <span className="truncate mr-4 opacity-90">{item.text}</span>
+                  <span className="text-[10px] opacity-60 whitespace-nowrap uppercase tracking-tighter">
+                    {item.category}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+      </div>
+    </main>
   );
 }
