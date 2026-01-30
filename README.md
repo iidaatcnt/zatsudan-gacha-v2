@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 雑談ネタガチャ v2 (Anti-Gravity Edition)
 
-## Getting Started
+Googleスプレッドシートをマスターデータとして使用する、Next.js製の雑談ネタ提供アプリです。
+リベ大「5つの力（貯める・稼ぐ・増やす・守る・使う）」に対応したカテゴリフィルタリング機能を搭載しています。
 
-First, run the development server:
+## 🚀 特徴
+
+- **Next.js (App Router)**: 高速でモダンなWebアプリケーションフレームワークを使用。
+- **5つの力カテゴリ**: リベ大「5つの力」に基づいた話題選択が可能。
+- **スプレッドシート連携**: ネタの追加・修正はGoogleスプレッドシートで完結。
+- **重複防止**: 直前に出たネタは表示されません（ローカル履歴機能）。
+- **Vercel Edge Functions**: APIルートを使用してスプレッドシートURLを隠蔽しつつ高速にデータを取得。
+
+## 📋 準備 (Googleスプレッドシート)
+
+1. 新しいGoogleスプレッドシートを作成します。
+2. 1行目をヘッダーとして以下の4列を作ります（順序重要）。
+   - **A列**: ID (一意な番号や文字列)
+   - **B列**: Category (貯める/稼ぐ/増やす/守る/使う/リベネタ/軽い雑談)
+   - **C列**: Text (表示するネタ本文)
+   - **D列**: Enabled (TRUE または FALSE)
+3. 2行目以降にデータを入力します。
+4. **「ファイル」>「共有」>「ウェブに公開」** を選択します。
+5. 「ドキュメント全体」ではなく、**作成したシート**を選択し、形式を **「カンマ区切り形式 (.csv)」** にして「公開」をクリックします。
+6. 表示された **URLをコピー** しておきます（このURLを環境変数に設定します）。
+
+## 🛠 Vercelへのデプロイ
+
+1. このリポジトリをVercelにインポートします。
+    - Framework Preset: **Next.js** (自動検出されるはずです)
+2. **Environment Variables** (環境変数) に以下を設定します。
+   - **Name**: `SHEET_CSV_URL`
+   - **Value**: (先ほどコピーしたスプレッドシートのCSV URL)
+3. **Deploy** をクリック！
+
+## 💻 ローカル開発
 
 ```bash
+# リポジトリをクローン
+git clone https://github.com/iidaatcnt/zatsudan-gacha-v2.git
+cd zatsudan-gacha-v2
+
+# 依存パッケージをインストール
+npm install
+
+# 環境変数の設定 (.env.local ファイルを作成)
+# SHEET_CSV_URL="あなたのスプレッドシートCSV_URL"
+echo 'SHEET_CSV_URL="YOUR_SHEET_URL"' > .env.local
+
+# 開発サーバー起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで `http://localhost:3000` を開いて動作確認します。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📜 テクノロジースタック
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: Next.js 14+ (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Data Fetching**: Papaparse (CSV Parsing)
+- **Deployment**: Vercel
 
-## Learn More
+## 📜 ライセンス
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
