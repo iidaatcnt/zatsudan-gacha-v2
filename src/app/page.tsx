@@ -9,11 +9,14 @@ import { CategoryFilter } from '@/types';
 export default function Home() {
   const [category, setCategory] = useState<CategoryFilter>('all');
   const {
+    categories,
     isSpinning,
     result,
     error,
     historyItems,
-    spin
+    likedIds,
+    spin,
+    toggleLike
   } = useGacha();
 
   const handleSpin = () => {
@@ -44,13 +47,11 @@ export default function Home() {
 
         {/* Header */}
         <header className="text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none mb-2 font-en">
-            ZATSUDAN<br />
-            <span className="accent-text">GACHA v2</span>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none mb-2">
+            雑談<br />
+            <span className="accent-text">ガチャ v3</span>
           </h1>
-          <p className="text-slate-400 text-xs tracking-[0.2em] font-en uppercase">
-            Anti-Gravity Edition (Next.js)
-          </p>
+
         </header>
 
         {/* Machine Card */}
@@ -72,14 +73,36 @@ export default function Home() {
 
             {/* Content Text */}
             <div className={`
-              text-xl md:text-2xl font-bold leading-relaxed transition-all duration-500
+              w-full flex flex-col items-center gap-4 transition-all duration-500
               ${isSpinning ? 'opacity-50 scale-95 blur-[2px]' : 'opacity-100 scale-100 blur-0'}
               ${result ? 'animate-[popIn_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)]' : ''}
             `}>
               {error ? (
                 <span className="text-red-400 text-base font-normal">{error}</span>
               ) : result ? (
-                result.text
+                <>
+                  <div className="text-xl md:text-2xl font-bold leading-relaxed">
+                    {result.text}
+                  </div>
+                  {/* Like Button */}
+                  <button
+                    onClick={() => toggleLike(result.id)}
+                    className="mt-2 p-2 rounded-full hover:bg-white/10 transition-colors group"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill={likedIds.includes(result.id) ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      className={`w-6 h-6 transition-all ${likedIds.includes(result.id)
+                        ? "text-pink-500 scale-110"
+                        : "text-slate-500 group-hover:text-pink-400"
+                        }`}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </button>
+                </>
               ) : (
                 <span className="text-slate-500 text-base font-normal">
                   ボタンを押して<br />話題をスキャン...
@@ -90,7 +113,12 @@ export default function Home() {
 
           {/* Controls */}
           <div>
-            <CategorySelector selected={category} onSelect={setCategory} disabled={isSpinning} />
+            <CategorySelector
+              selected={category}
+              onSelect={setCategory}
+              disabled={isSpinning}
+              categories={categories}
+            />
 
             <button
               onClick={handleSpin}
@@ -121,9 +149,14 @@ export default function Home() {
                   `}
                 >
                   <span className="truncate mr-4 opacity-90">{item.text}</span>
-                  <span className="text-[10px] opacity-60 whitespace-nowrap uppercase tracking-tighter">
-                    {item.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {likedIds.includes(item.id) && (
+                      <span className="text-pink-500">♥</span>
+                    )}
+                    <span className="text-[10px] opacity-60 whitespace-nowrap uppercase tracking-tighter">
+                      {item.category}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>

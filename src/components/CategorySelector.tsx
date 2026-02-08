@@ -8,19 +8,30 @@ interface Props {
     disabled?: boolean;
 }
 
-const CATEGORIES: { value: CategoryFilter; label: string; colorClass: string }[] = [
-    { value: 'all', label: 'ALL', colorClass: 'peer-checked:bg-slate-500 peer-checked:border-slate-400 border-slate-400/50 text-slate-400' },
-    { value: '貯める', label: '貯める', colorClass: 'peer-checked:bg-red-500/30 peer-checked:border-red-500 border-red-500/50 text-red-300' },
-    { value: '稼ぐ', label: '稼ぐ', colorClass: 'peer-checked:bg-blue-500/30 peer-checked:border-blue-500 border-blue-500/50 text-blue-300' },
-    { value: '増やす', label: '増やす', colorClass: 'peer-checked:bg-emerald-500/30 peer-checked:border-emerald-500 border-emerald-500/50 text-emerald-300' },
-    { value: '守る', label: '守る', colorClass: 'peer-checked:bg-violet-500/30 peer-checked:border-violet-500 border-violet-500/50 text-violet-300' },
-    { value: '使う', label: '使う', colorClass: 'peer-checked:bg-amber-500/30 peer-checked:border-amber-500 border-amber-500/50 text-amber-300' },
-];
+export function CategorySelector({ selected, onSelect, disabled, categories }: Props & { categories: string[] }) {
 
-export function CategorySelector({ selected, onSelect, disabled }: Props) {
+    const getColorClass = (cat: string) => {
+        if (cat === 'all') return 'peer-checked:bg-slate-500 peer-checked:border-slate-400 border-slate-400/50 text-slate-400';
+
+        // Simple consistent hashing for colors
+        const colors = [
+            'red', 'blue', 'emerald', 'violet', 'amber', 'indigo', 'pink', 'cyan', 'rose', 'fuchsia'
+        ];
+        let hash = 0;
+        for (let i = 0; i < cat.length; i++) hash += cat.charCodeAt(i);
+        const color = colors[hash % colors.length];
+
+        return `peer-checked:bg-${color}-500/30 peer-checked:border-${color}-500 border-${color}-500/50 text-${color}-300`;
+    };
+
+    const allOptions = [
+        { value: 'all', label: 'ランダム' },
+        ...categories.map(c => ({ value: c, label: c }))
+    ];
+
     return (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {CATEGORIES.map((cat) => (
+            {allOptions.map((cat) => (
                 <label key={cat.value} className="relative cursor-pointer group">
                     <input
                         type="radio"
@@ -38,7 +49,7 @@ export function CategorySelector({ selected, onSelect, disabled }: Props) {
             group-hover:bg-white/10
             peer-checked:scale-105 peer-checked:text-white peer-checked:shadow-[0_0_10px_rgba(255,255,255,0.2)]
             peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
-            ${cat.colorClass}
+            ${getColorClass(cat.value)}
           `}>
                         {cat.label}
                     </span>

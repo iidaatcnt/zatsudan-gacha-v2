@@ -4,9 +4,10 @@ export interface Topic {
     category: string;
     text: string;
     enabled: boolean;
+    likes?: number;
 }
 
-export type CategoryFilter = 'all' | '貯める' | '稼ぐ' | '増やす' | '守る' | '使う';
+export type CategoryFilter = string;
 
 export const FALLBACK_DATA: Topic[] = [
     { id: "1", category: "貯める", text: "最近節約できたことは？", enabled: true },
