@@ -23,6 +23,27 @@ export default function Home() {
     spin(category, count);
   };
 
+  // カテゴリごとの配色テーマを取得
+  const getCategoryTheme = (cat: string) => {
+    // Default default
+    let theme = {
+      bg: 'bg-slate-50',
+      border: 'border-slate-100',
+      text: 'text-slate-800',
+      badge: 'bg-slate-200 text-slate-600'
+    };
+
+    if (cat.includes('貯める')) theme = { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', badge: 'bg-red-100 text-red-700' };
+    else if (cat.includes('稼ぐ')) theme = { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-700' };
+    else if (cat.includes('増やす')) theme = { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-700' };
+    else if (cat.includes('守る')) theme = { bg: 'bg-violet-50', border: 'border-violet-100', text: 'text-violet-900', badge: 'bg-violet-100 text-violet-700' };
+    else if (cat.includes('使う')) theme = { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-700' };
+    else if (cat.includes('リベ')) theme = { bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', badge: 'bg-indigo-100 text-indigo-700' };
+    else if (cat.includes('雑談')) theme = { bg: 'bg-cyan-50', border: 'border-cyan-100', text: 'text-cyan-900', badge: 'bg-cyan-100 text-cyan-700' };
+
+    return theme;
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center pt-20 px-4 pb-12 font-sans bg-white text-slate-800">
 
@@ -47,8 +68,8 @@ export default function Home() {
             <span>{isSpinning ? '選定中...' : 'ガチャ（2ネタ）'}</span>
           </button>
 
-          {/* Category Selector (Optional, kept simple) */}
-          <div className="w-full max-w-md opacity-80 hover:opacity-100 transition-opacity">
+          {/* Category Selector */}
+          <div className="w-full max-w-md">
             <CategorySelector
               selected={category}
               onSelect={setCategory}
@@ -63,28 +84,35 @@ export default function Home() {
           {error ? (
             <div className="text-red-500 font-bold text-center py-8">{error}</div>
           ) : result.length > 0 ? (
-            <div className="flex flex-col gap-8">
-              {result.map((topic, index) => (
-                <div
-                  key={topic.id}
-                  className={`flex flex-col gap-1 ${index !== result.length - 1 ? 'border-b border-dashed border-slate-200 pb-8' : ''} animate-[popIn_0.3s_ease-out]`}
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <p className="text-lg md:text-2xl font-bold text-slate-800 leading-relaxed">
-                    {topic.text}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-500">
-                      カテゴリ: {topic.category}
-                    </span>
-                    {topic.selectionCount !== undefined && topic.selectionCount >= 0 && (
-                      <span className="text-xs text-slate-400 opacity-70">
-                        (選出: {topic.selectionCount + 1}回目)
+            <div className="flex flex-col gap-6">
+              {result.map((topic, index) => {
+                const theme = getCategoryTheme(topic.category);
+                return (
+                  <div
+                    key={topic.id}
+                    className={`
+                        p-6 rounded-xl border border-dashed flex flex-col gap-2
+                        animate-[popIn_0.3s_ease-out]
+                        ${theme.bg} ${theme.border}
+                      `}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <p className={`text-lg md:text-2xl font-bold leading-relaxed ${theme.text}`}>
+                      {topic.text}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${theme.badge}`}>
+                        {topic.category}
                       </span>
-                    )}
+                      {topic.selectionCount !== undefined && topic.selectionCount >= 0 && (
+                        <span className="text-xs text-slate-400 opacity-70">
+                          (選出: {topic.selectionCount + 1}回目)
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">

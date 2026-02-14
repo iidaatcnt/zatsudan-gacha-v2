@@ -44,11 +44,7 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
         <div className="flex flex-wrap justify-center gap-2">
             {allOptions.map((cat) => {
                 const color = getColors(cat.value);
-                // Dynamic class construction for Tailwind
-                // Using style object for dynamic colors to be safe with Tailwind JIT if needed, 
-                // but standard colors usually work if safe-listed. 
-                // Here we rely on standard Tailwind classes being present or JIT picking them up.
-                // Assuming standard pallete.
+                const isAll = cat.value === 'all';
 
                 return (
                     <label key={cat.value} className="relative cursor-pointer group">
@@ -67,11 +63,14 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
                         shadow-sm
                         peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
                         
-                        /* Unselected State (Light Theme) */
-                        bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300
+                        /* Unselected State */
+                        bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300
 
                         /* Selected State */
-                        peer-checked:bg-${color}-500 peer-checked:border-${color}-500 peer-checked:text-white
+                        ${isAll
+                                ? 'peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white'
+                                : `peer-checked:bg-${color}-500 peer-checked:border-${color}-500 peer-checked:text-white`
+                            }
                         peer-checked:shadow-md peer-checked:scale-105
                     `}>
                             {cat.label}
@@ -82,4 +81,3 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
         </div>
     );
 }
-
