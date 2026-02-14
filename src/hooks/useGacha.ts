@@ -48,7 +48,7 @@ export function useGacha(customSheetUrl?: string) {
                         const parsed = results.data.map((row: any, index: number) => ({
                             id: (row.ID || row.id || row["ネタID"] || `auto-${index + 1}`).toString(),
                             category: (row.Category || row.category || row["カテゴリ"] || row[0] || "未分類").trim(),
-                            text: (row.Text || row.text || row["ネタ内容"] || row[1] || "").trim(),
+                            text: (row.Text || row.text || row["ネタ内容"] || row["議題・話題（問いかけ例）"] || row[1] || "").trim(),
                             enabled: (row.Enabled || row.enabled || "TRUE").toString().toUpperCase() === 'TRUE',
                             selectionCount: parseInt(row.Count || row.count || row["選択回数"] || row[2] || "0", 10)
                         })) as Topic[];
