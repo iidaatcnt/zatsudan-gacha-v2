@@ -1,21 +1,37 @@
 
-import { NextResponse } from 'next/server';
+
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge'; // Vercel Edge Functionsで高速化
 
-export async function GET() {
-    const sheetUrl = process.env.SHEET_CSV_URL;
+export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+    const customUrl = searchParams.get('url');
+
+    // Default to env var, but override with custom URL if provided and safe
+    let sheetUrl = process.env.SHEET_CSV_URL;
+
+    if (customUrl) {
+        // Simple security check to ensure it's a Google Sheet
+        if (customUrl.startsWith('https://docs.google.com/spreadsheets/')) {
+            sheetUrl = customUrl;
+        }
+    }
 
     if (!sheetUrl) {
         return NextResponse.json(
-            { error: 'Environment variable SHEET_CSV_URL is not set' },
+            { error: 'Sheet URL is not set' },
             { status: 500 }
         );
     }
 
     try {
         // キャッシュバスターをつけてスプレッドシートからCSVを取得
-        const response = await fetch(`${sheetUrl}?t=${Date.now()}`);
+        // If the URL already has query params, append with &
+        const separator = sheetUrl.includes('?') ? '&' : '?';
+        const fetchUrl = `${sheetUrl}${separator}t=${Date.now()}`;
+
+        const response = await fetch(fetchUrl);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch sheet: ${response.statusText}`);
@@ -38,3 +54,4 @@ export async function GET() {
         );
     }
 }
+

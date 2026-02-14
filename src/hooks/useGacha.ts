@@ -7,7 +7,7 @@ import { Topic, CategoryFilter, FALLBACK_DATA } from '@/types';
 
 const HISTORY_LIMIT = 5;
 
-export function useGacha() {
+export function useGacha(customSheetUrl?: string) {
     const [topics, setTopics] = useState<Topic[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [history, setHistory] = useState<string[]>([]); // ID list
@@ -20,6 +20,7 @@ export function useGacha() {
 
     // Initialize likes from localStorage
     useEffect(() => {
+        // ... (existing localStorage logic for likes) ...
         const storedLikesV2 = localStorage.getItem('zatsudan_likes_v2');
         if (storedLikesV2) {
             try {
@@ -27,28 +28,20 @@ export function useGacha() {
             } catch (e) {
                 console.error("Failed to parse likes v2", e);
             }
-        } else {
-            // Migration from v1
-            const storedLikesV1 = localStorage.getItem('zatsudan_likes');
-            if (storedLikesV1) {
-                try {
-                    const ids: string[] = JSON.parse(storedLikesV1);
-                    const newCounts: Record<string, number> = {};
-                    ids.forEach(id => { newCounts[id] = 1; });
-                    setLikedCounts(newCounts);
-                    localStorage.setItem('zatsudan_likes_v2', JSON.stringify(newCounts));
-                } catch (e) {
-                    console.error("Failed to migrate likes v1", e);
-                }
-            }
         }
     }, []);
 
     // Load Data
     useEffect(() => {
         async function loadData() {
+            setIsLoading(true);
             try {
-                const res = await fetch('/api/sheet');
+                let url = '/api/sheet';
+                if (customSheetUrl) {
+                    url += `?url=${encodeURIComponent(customSheetUrl)}`;
+                }
+
+                const res = await fetch(url);
                 if (!res.ok) throw new Error('Network response was not ok');
                 const csvText = await res.text();
 
@@ -56,18 +49,18 @@ export function useGacha() {
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
+                        // ... (existing parsing logic) ...
                         const parsed = results.data.map((row: any, index: number) => ({
                             id: (row.ID || row.id || row["ネタID"] || `auto-${index + 1}`).toString(),
-                            category: (row.Category || row.category || row["カテゴリ"] || row[0] || "未分類").trim(), // A列
-                            text: (row.Text || row.text || row["ネタ内容"] || row[1] || "").trim(), // B列
+                            category: (row.Category || row.category || row["カテゴリ"] || row[0] || "未分類").trim(),
+                            text: (row.Text || row.text || row["ネタ内容"] || row[1] || "").trim(),
                             enabled: (row.Enabled || row.enabled || "TRUE").toString().toUpperCase() === 'TRUE',
-                            selectionCount: parseInt(row.Count || row.count || row["選択回数"] || row[2] || "0", 10) // C列
+                            selectionCount: parseInt(row.Count || row.count || row["選択回数"] || row[2] || "0", 10)
                         })) as Topic[];
 
                         const validTopics = parsed.filter(t => t.text);
-
-                        // Extract unique categories
                         const cats = Array.from(new Set(validTopics.map(t => t.category))).filter(Boolean);
+
                         setCategories(cats);
 
                         if (validTopics.length > 0) {
@@ -81,6 +74,7 @@ export function useGacha() {
                     },
                     error: (err: any) => {
                         console.error("CSV Parse Error", err);
+                        // ... fallback ...
                         setTopics(FALLBACK_DATA);
                         setCategories(Array.from(new Set(FALLBACK_DATA.map(t => t.category))));
                         setIsLoading(false);
@@ -96,7 +90,8 @@ export function useGacha() {
         }
 
         loadData();
-    }, []);
+    }, [customSheetUrl]);
+
 
     const cycleLike = useCallback((id: string) => {
         setLikedCounts(prev => {
