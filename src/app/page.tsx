@@ -25,17 +25,14 @@ export default function Home() {
     if (storedUrl) setSheetUrl(storedUrl);
   }, []);
 
-  // useGacha hook with custom URL (convert edit URL to export URL for fetching)
+  // useGacha hook with custom URL
   const getExportUrl = (url: string) => {
     if (!url) return "";
     if (url.includes('/export?')) return url;
-    // Simple conversion
     try {
-      // Extract ID
       const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
       if (match && match[1]) {
         const id = match[1];
-        // Extract GID
         const gidMatch = url.match(/gid=([0-9]+)/);
         const gid = gidMatch ? gidMatch[1] : "0";
         return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
@@ -54,9 +51,9 @@ export default function Home() {
     result,
     error,
     historyItems,
-    likedCounts,
+    selectedId,
     spin,
-    cycleLike
+    toggleSelection
   } = useGacha(exportUrl);
 
   const handleSpin = () => {
@@ -77,25 +74,20 @@ export default function Home() {
       bg: 'bg-slate-50',
       border: 'border-slate-100',
       text: 'text-slate-800',
-      badge: 'bg-slate-200 text-slate-600'
+      badge: 'bg-slate-200 text-slate-600',
+      activeBg: 'bg-slate-200',
+      activeBorder: 'border-slate-400'
     };
 
-    if (cat.includes('貯める')) theme = { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', badge: 'bg-red-100 text-red-700' };
-    else if (cat.includes('稼ぐ')) theme = { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-700' };
-    else if (cat.includes('増やす')) theme = { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-700' };
-    else if (cat.includes('守る')) theme = { bg: 'bg-violet-50', border: 'border-violet-100', text: 'text-violet-900', badge: 'bg-violet-100 text-violet-700' };
-    else if (cat.includes('使う')) theme = { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-700' };
-    else if (cat.includes('リベ')) theme = { bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', badge: 'bg-indigo-100 text-indigo-700' };
-    else if (cat.includes('雑談')) theme = { bg: 'bg-cyan-50', border: 'border-cyan-100', text: 'text-cyan-900', badge: 'bg-cyan-100 text-cyan-700' };
+    if (cat.includes('貯める')) theme = { ...theme, bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', badge: 'bg-red-100 text-red-700', activeBg: 'bg-red-100', activeBorder: 'border-red-400' };
+    else if (cat.includes('稼ぐ')) theme = { ...theme, bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-700', activeBg: 'bg-blue-100', activeBorder: 'border-blue-400' };
+    else if (cat.includes('増やす')) theme = { ...theme, bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-700', activeBg: 'bg-emerald-100', activeBorder: 'border-emerald-400' };
+    else if (cat.includes('守る')) theme = { ...theme, bg: 'bg-violet-50', border: 'border-violet-100', text: 'text-violet-900', badge: 'bg-violet-100 text-violet-700', activeBg: 'bg-violet-100', activeBorder: 'border-violet-400' };
+    else if (cat.includes('使う')) theme = { ...theme, bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-700', activeBg: 'bg-amber-100', activeBorder: 'border-amber-400' };
+    else if (cat.includes('リベ')) theme = { ...theme, bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', badge: 'bg-indigo-100 text-indigo-700', activeBg: 'bg-indigo-100', activeBorder: 'border-indigo-400' };
+    else if (cat.includes('雑談')) theme = { ...theme, bg: 'bg-cyan-50', border: 'border-cyan-100', text: 'text-cyan-900', badge: 'bg-cyan-100 text-cyan-700', activeBg: 'bg-cyan-100', activeBorder: 'border-cyan-400' };
 
     return theme;
-  };
-
-  const getLikeIcon = (count: number) => {
-    if (count >= 3) return "💖";
-    if (count === 2) return "❤️";
-    if (count === 1) return "🤍";
-    return "🩶";
   };
 
   return (
@@ -123,7 +115,6 @@ export default function Home() {
 
         {/* Controls */}
         <div className="w-full flex flex-col items-center gap-6">
-
           <button
             onClick={handleSpin}
             disabled={isSpinning}
@@ -133,7 +124,6 @@ export default function Home() {
             <span>{isSpinning ? '選定中...' : 'ガチャ（2ネタ）'}</span>
           </button>
 
-          {/* Category Selector */}
           <div className="w-full max-w-md">
             <CategorySelector
               selected={category}
@@ -152,13 +142,16 @@ export default function Home() {
             <div className="flex flex-col gap-6">
               {result.map((topic, index) => {
                 const theme = getCategoryTheme(topic.category);
+                const isSelected = selectedId === topic.id;
+
                 return (
                   <div
                     key={topic.id}
+                    onClick={() => toggleSelection(topic.id)} // Click whole card
                     className={`
-                        p-6 rounded-xl border border-dashed flex flex-col gap-2
-                        animate-[popIn_0.3s_ease-out] relative
-                        ${theme.bg} ${theme.border}
+                        p-6 rounded-xl border-2 flex flex-col gap-2 cursor-pointer
+                        animate-[popIn_0.3s_ease-out] relative transition-all duration-200
+                        ${isSelected ? `${theme.activeBg} ${theme.activeBorder} shadow-md scale-[1.01]` : `${theme.bg} ${theme.border} border-dashed hover:shadow-sm`}
                       `}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
@@ -176,13 +169,14 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* Like Button */}
-                    <button
-                      onClick={() => cycleLike(topic.id)}
-                      className="absolute bottom-4 right-4 p-2 rounded-full hover:bg-white/50 transition-transform active:scale-95"
-                    >
-                      <span className="text-xl filter drop-shadow-sm">{getLikeIcon(likedCounts[topic.id] || 0)}</span>
-                    </button>
+                    {/* Selection Indicator */}
+                    <div className="absolute bottom-4 right-4 transition-transform active:scale-95">
+                      {isSelected ? (
+                        <span className="text-2xl filter drop-shadow-sm scale-110 block">❤️</span> // Chosen
+                      ) : (
+                        <span className="text-2xl filter drop-shadow-sm opacity-30 grayscale hover:opacity-50 hover:grayscale-0 block">🤍</span> // Not chosen
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -212,7 +206,7 @@ export default function Home() {
 
       </div>
 
-      {/* Settings Modal */}
+      {/* Settings Modal (Same as before) */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[popIn_0.2s_ease-out]">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl p-6 md:p-8 flex flex-col gap-6" onClick={(e) => e.stopPropagation()}>

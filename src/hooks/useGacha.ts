@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -16,18 +15,15 @@ export function useGacha(customSheetUrl?: string) {
     const [isSpinning, setIsSpinning] = useState(false);
     const [result, setResult] = useState<Topic[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [likedCounts, setLikedCounts] = useState<Record<string, number>>({});
 
-    // Initialize likes from localStorage
+    // New: Single selection state
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    // Initialize selection from localStorage
     useEffect(() => {
-        // ... (existing localStorage logic for likes) ...
-        const storedLikesV2 = localStorage.getItem('zatsudan_likes_v2');
-        if (storedLikesV2) {
-            try {
-                setLikedCounts(JSON.parse(storedLikesV2));
-            } catch (e) {
-                console.error("Failed to parse likes v2", e);
-            }
+        const storedSelection = localStorage.getItem('zatsudan_selection');
+        if (storedSelection) {
+            setSelectedId(storedSelection);
         }
     }, []);
 
@@ -49,7 +45,6 @@ export function useGacha(customSheetUrl?: string) {
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
-                        // ... (existing parsing logic) ...
                         const parsed = results.data.map((row: any, index: number) => ({
                             id: (row.ID || row.id || row["ネタID"] || `auto-${index + 1}`).toString(),
                             category: (row.Category || row.category || row["カテゴリ"] || row[0] || "未分類").trim(),
@@ -74,7 +69,6 @@ export function useGacha(customSheetUrl?: string) {
                     },
                     error: (err: any) => {
                         console.error("CSV Parse Error", err);
-                        // ... fallback ...
                         setTopics(FALLBACK_DATA);
                         setCategories(Array.from(new Set(FALLBACK_DATA.map(t => t.category))));
                         setIsLoading(false);
@@ -93,20 +87,15 @@ export function useGacha(customSheetUrl?: string) {
     }, [customSheetUrl]);
 
 
-    const cycleLike = useCallback((id: string) => {
-        setLikedCounts(prev => {
-            const current = prev[id] || 0;
-            const next = current >= 3 ? 0 : current + 1;
-
-            const newCounts = { ...prev };
-            if (next === 0) {
-                delete newCounts[id];
+    const toggleSelection = useCallback((id: string) => {
+        setSelectedId(prev => {
+            const next = prev === id ? null : id;
+            if (next) {
+                localStorage.setItem('zatsudan_selection', next);
             } else {
-                newCounts[id] = next;
+                localStorage.removeItem('zatsudan_selection');
             }
-
-            localStorage.setItem('zatsudan_likes_v2', JSON.stringify(newCounts));
-            return newCounts;
+            return next;
         });
     }, []);
 
@@ -115,6 +104,8 @@ export function useGacha(customSheetUrl?: string) {
 
         setIsSpinning(true);
         setError(null);
+        setSelectedId(null); // Clear selection on spin? Maybe keep it? Let's clear it to encourage new selection.
+        localStorage.removeItem('zatsudan_selection');
 
         setTimeout(() => {
             // 1. Filter candidates
@@ -127,18 +118,16 @@ export function useGacha(customSheetUrl?: string) {
                 candidates = candidates.filter(t => t.category === categoryFilter);
             }
 
-            // 3. Fallback if no candidates (try removing history filter)
+            // 3. Fallback
             if (candidates.length < count) {
                 const allInCategory = topics.filter(t =>
                     t.enabled && (categoryFilter === 'all' || t.category === categoryFilter)
                 );
 
                 if (allInCategory.length >= count) {
-                    // If we have enough topics overall, reset history partially or fully
                     setHistory([]);
                     candidates = allInCategory;
                 } else if (allInCategory.length > 0) {
-                    // Not enough topics even after reset, just take all
                     candidates = allInCategory;
                     setHistory([]);
                 } else {
@@ -148,8 +137,7 @@ export function useGacha(customSheetUrl?: string) {
                 }
             }
 
-            // 4. Random selection of N items
-            // Fisher-Yates shuffle
+            // 4. Random selection
             const shuffled = [...candidates];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -164,7 +152,6 @@ export function useGacha(customSheetUrl?: string) {
             const pickedIds = picked.map(p => p.id);
             setHistory(prev => {
                 const newHistory = [...prev, ...pickedIds];
-                // Keep history limit reasonable (e.g. 50 items)
                 if (newHistory.length > 50) return newHistory.slice(-50);
                 return newHistory;
             });
@@ -188,8 +175,8 @@ export function useGacha(customSheetUrl?: string) {
         result,
         error,
         historyItems,
-        likedCounts,
-        spin,
-        cycleLike
+        selectedId, // Exposed
+        toggleSelection, // Exposed
+        spin
     };
 }
