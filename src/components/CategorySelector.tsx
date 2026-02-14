@@ -9,23 +9,40 @@ interface Props {
     categories: string[];
 }
 
+// Fixed color palette to ensure visibility
+const PALETTE = [
+    '#ef4444', // red-500
+    '#3b82f6', // blue-500
+    '#10b981', // emerald-500
+    '#8b5cf6', // violet-500
+    '#f59e0b', // amber-500
+    '#6366f1', // indigo-500
+    '#06b6d4', // cyan-500
+    '#ec4899', // pink-500
+    '#f97316', // orange-500
+    '#84cc16', // lime-500
+    '#14b8a6', // teal-500
+    '#d946ef', // fuchsia-500
+];
+
 export function CategorySelector({ selected, onSelect, disabled, categories }: Props) {
 
-    const getColors = (cat: string) => {
-        if (cat === 'all') return 'slate';
-        if (cat.includes('貯める')) return 'red';
-        if (cat.includes('稼ぐ')) return 'blue';
-        if (cat.includes('増やす')) return 'emerald';
-        if (cat.includes('守る')) return 'violet';
-        if (cat.includes('使う')) return 'amber';
-        if (cat.includes('リベ')) return 'indigo';
-        if (cat.includes('雑談')) return 'cyan';
+    const getColor = (cat: string) => {
+        if (cat === 'all') return '#1e293b'; // slate-800
 
-        // Simple consistent hashing for others
-        const colors = ['pink', 'rose', 'fuchsia', 'purple', 'sky', 'teal', 'lime', 'orange'];
+        // 5 Powers specific mapping (optional, but nice to keep)
+        if (cat.includes('貯める')) return '#ef4444';
+        if (cat.includes('稼ぐ')) return '#3b82f6';
+        if (cat.includes('増やす')) return '#10b981';
+        if (cat.includes('守る')) return '#8b5cf6';
+        if (cat.includes('使う')) return '#f59e0b';
+        if (cat.includes('リベ')) return '#6366f1';
+        if (cat.includes('雑談')) return '#06b6d4';
+
+        // Deterministic color assignment for others
         let hash = 0;
         for (let i = 0; i < cat.length; i++) hash += cat.charCodeAt(i);
-        return colors[hash % colors.length];
+        return PALETTE[hash % PALETTE.length];
     };
 
     // Ensure 5 Powers order if they exist, then others
@@ -43,8 +60,8 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
     return (
         <div className="flex flex-wrap justify-center gap-2">
             {allOptions.map((cat) => {
-                const color = getColors(cat.value);
-                const isAll = cat.value === 'all';
+                const isSelected = selected === cat.value;
+                const color = getColor(cat.value);
 
                 return (
                     <label key={cat.value} className="relative cursor-pointer group">
@@ -52,27 +69,22 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
                             type="radio"
                             name="category"
                             value={cat.value}
-                            checked={selected === cat.value}
+                            checked={isSelected}
                             onChange={() => onSelect(cat.value as CategoryFilter)}
                             disabled={disabled}
                             className="peer sr-only"
                         />
-                        <span className={`
-                        inline-block px-4 py-2 rounded-full text-sm font-bold border
-                        transition-all duration-200 ease-out
-                        shadow-sm
-                        peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
-                        
-                        /* Unselected State */
-                        bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300
-
-                        /* Selected State */
-                        ${isAll
-                                ? 'peer-checked:bg-slate-800 peer-checked:border-slate-800 peer-checked:text-white'
-                                : `peer-checked:bg-${color}-500 peer-checked:border-${color}-500 peer-checked:text-white`
-                            }
-                        peer-checked:shadow-md peer-checked:scale-105
-                    `}>
+                        <span
+                            className={`
+                            inline-block px-4 py-2 rounded-full text-sm font-bold border transition-all duration-200 ease-out shadow-sm
+                            peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
+                            ${isSelected
+                                    ? 'text-white shadow-md scale-105 border-transparent'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                                }
+                        `}
+                            style={isSelected ? { backgroundColor: color, borderColor: color } : {}}
+                        >
                             {cat.label}
                         </span>
                     </label>

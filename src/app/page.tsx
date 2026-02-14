@@ -8,6 +8,22 @@ import { CategoryFilter } from '@/types';
 const DEFAULT_TITLE = "雑談ガチャ";
 const DEFAULT_URL = "https://docs.google.com/spreadsheets/d/1xugRnRxhA8UohWamOOVHj51g0cfnGXB1wOjDwq2YRrs/edit?gid=0#gid=0";
 
+// Palette for result cards (matching CategorySelector logic roughly)
+const PALETTE = [
+  { base: '#ef4444', text: '#7f1d1d', bg: '#fef2f2', border: '#fecaca' }, // red
+  { base: '#3b82f6', text: '#1e3a8a', bg: '#eff6ff', border: '#bfdbfe' }, // blue
+  { base: '#10b981', text: '#064e3b', bg: '#ecfdf5', border: '#a7f3d0' }, // emerald
+  { base: '#8b5cf6', text: '#4c1d95', bg: '#f5f3ff', border: '#ddd6fe' }, // violet
+  { base: '#f59e0b', text: '#78350f', bg: '#fffbeb', border: '#fde68a' }, // amber
+  { base: '#6366f1', text: '#312e81', bg: '#eef2ff', border: '#c7d2fe' }, // indigo
+  { base: '#06b6d4', text: '#164e63', bg: '#ecfeff', border: '#a5f3fc' }, // cyan
+  { base: '#ec4899', text: '#831843', bg: '#fdf2f8', border: '#fbcfe8' }, // pink
+  { base: '#f97316', text: '#7c2d12', bg: '#fff7ed', border: '#fed7aa' }, // orange
+  { base: '#84cc16', text: '#365314', bg: '#f7fee7', border: '#d9f99d' }, // lime
+  { base: '#14b8a6', text: '#134e4a', bg: '#f0fdfa', border: '#99f6e4' }, // teal
+  { base: '#d946ef', text: '#701a75', bg: '#fdf4ff', border: '#f0abfc' }, // fuchsia
+];
+
 export default function Home() {
   const [category, setCategory] = useState<CategoryFilter>('all');
   const count = 2; // Fixed to 2 topics
@@ -68,26 +84,19 @@ export default function Home() {
     setIsSettingsOpen(false);
   };
 
-  // カテゴリごとの配色テーマを取得
-  const getCategoryTheme = (cat: string) => {
-    let theme = {
-      bg: 'bg-slate-50',
-      border: 'border-slate-100',
-      text: 'text-slate-800',
-      badge: 'bg-slate-200 text-slate-600',
-      activeBg: 'bg-slate-200',
-      activeBorder: 'border-slate-400'
-    };
+  // Get predictable theme for any category string
+  const getCategoryColor = (cat: string) => {
+    if (cat.includes('貯める')) return PALETTE[0];
+    if (cat.includes('稼ぐ')) return PALETTE[1];
+    if (cat.includes('増やす')) return PALETTE[2];
+    if (cat.includes('守る')) return PALETTE[3];
+    if (cat.includes('使う')) return PALETTE[4];
+    if (cat.includes('リベ')) return PALETTE[5];
+    if (cat.includes('雑談')) return PALETTE[6];
 
-    if (cat.includes('貯める')) theme = { ...theme, bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-900', badge: 'bg-red-100 text-red-700', activeBg: 'bg-red-100', activeBorder: 'border-red-400' };
-    else if (cat.includes('稼ぐ')) theme = { ...theme, bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-700', activeBg: 'bg-blue-100', activeBorder: 'border-blue-400' };
-    else if (cat.includes('増やす')) theme = { ...theme, bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-700', activeBg: 'bg-emerald-100', activeBorder: 'border-emerald-400' };
-    else if (cat.includes('守る')) theme = { ...theme, bg: 'bg-violet-50', border: 'border-violet-100', text: 'text-violet-900', badge: 'bg-violet-100 text-violet-700', activeBg: 'bg-violet-100', activeBorder: 'border-violet-400' };
-    else if (cat.includes('使う')) theme = { ...theme, bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-700', activeBg: 'bg-amber-100', activeBorder: 'border-amber-400' };
-    else if (cat.includes('リベ')) theme = { ...theme, bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-900', badge: 'bg-indigo-100 text-indigo-700', activeBg: 'bg-indigo-100', activeBorder: 'border-indigo-400' };
-    else if (cat.includes('雑談')) theme = { ...theme, bg: 'bg-cyan-50', border: 'border-cyan-100', text: 'text-cyan-900', badge: 'bg-cyan-100 text-cyan-700', activeBg: 'bg-cyan-100', activeBorder: 'border-cyan-400' };
-
-    return theme;
+    let hash = 0;
+    for (let i = 0; i < cat.length; i++) hash += cat.charCodeAt(i);
+    return PALETTE[hash % PALETTE.length];
   };
 
   return (
@@ -141,29 +150,37 @@ export default function Home() {
           ) : result.length > 0 ? (
             <div className="flex flex-col gap-6">
               {result.map((topic, index) => {
-                const theme = getCategoryTheme(topic.category);
+                const colors = getCategoryColor(topic.category);
                 const isSelected = selectedId === topic.id;
 
                 return (
                   <div
                     key={topic.id}
-                    onClick={() => toggleSelection(topic.id)} // Click whole card
+                    onClick={() => toggleSelection(topic.id)}
                     className={`
                         p-6 rounded-xl border-2 flex flex-col gap-2 cursor-pointer
                         animate-[popIn_0.3s_ease-out] relative transition-all duration-200
-                        ${isSelected ? `${theme.activeBg} ${theme.activeBorder} shadow-md scale-[1.01]` : `${theme.bg} ${theme.border} border-dashed hover:shadow-sm`}
+                        ${isSelected ? 'shadow-md scale-[1.01]' : 'border-dashed hover:shadow-sm'}
                       `}
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      backgroundColor: isSelected ? colors.border : colors.bg, // Darker on select
+                      borderColor: isSelected ? colors.base : colors.border,
+                      color: colors.text
+                    }}
                   >
-                    <p className={`text-lg md:text-2xl font-bold leading-relaxed ${theme.text}`}>
+                    <p className="text-lg md:text-2xl font-bold leading-relaxed">
                       {topic.text}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${theme.badge}`}>
+                      <span
+                        className="text-xs font-bold px-2 py-0.5 rounded"
+                        style={{ backgroundColor: colors.border, color: colors.text }}
+                      >
                         {topic.category}
                       </span>
                       {topic.selectionCount !== undefined && topic.selectionCount >= 0 && (
-                        <span className="text-xs text-slate-400 opacity-70">
+                        <span className="text-xs opacity-70" style={{ color: colors.text }}>
                           (選出: {topic.selectionCount + 1}回目)
                         </span>
                       )}
@@ -172,9 +189,9 @@ export default function Home() {
                     {/* Selection Indicator */}
                     <div className="absolute bottom-4 right-4 transition-transform active:scale-95">
                       {isSelected ? (
-                        <span className="text-2xl filter drop-shadow-sm scale-110 block">❤️</span> // Chosen
+                        <span className="text-2xl filter drop-shadow-sm scale-110 block">❤️</span>
                       ) : (
-                        <span className="text-2xl filter drop-shadow-sm opacity-30 grayscale hover:opacity-50 hover:grayscale-0 block">🤍</span> // Not chosen
+                        <span className="text-2xl filter drop-shadow-sm opacity-30 grayscale hover:opacity-50 hover:grayscale-0 block">🤍</span>
                       )}
                     </div>
                   </div>
