@@ -11,22 +11,40 @@ interface Props {
 export function CategorySelector({ selected, onSelect, disabled, categories }: Props & { categories: string[] }) {
 
     const getColorClass = (cat: string) => {
-        if (cat === 'all') return 'peer-checked:bg-slate-500 peer-checked:border-slate-400 border-slate-400/50 text-slate-400';
+        if (cat === 'all') return 'peer-checked:bg-slate-600 peer-checked:border-slate-400 peer-checked:text-white border-slate-600 text-slate-400 hover:border-slate-500';
 
-        // Simple consistent hashing for colors
-        const colors = [
-            'red', 'blue', 'emerald', 'violet', 'amber', 'indigo', 'pink', 'cyan', 'rose', 'fuchsia'
-        ];
-        let hash = 0;
-        for (let i = 0; i < cat.length; i++) hash += cat.charCodeAt(i);
-        const color = colors[hash % colors.length];
+        let color = 'slate';
 
-        return `peer-checked:bg-${color}-500/30 peer-checked:border-${color}-500 border-${color}-500/50 text-${color}-300`;
+        // Manual mapping for 5 Powers + others
+        if (cat.includes('貯める')) color = 'red';
+        else if (cat.includes('稼ぐ')) color = 'blue';
+        else if (cat.includes('増やす')) color = 'emerald';
+        else if (cat.includes('守る')) color = 'violet';
+        else if (cat.includes('使う')) color = 'amber';
+        else if (cat.includes('リベ')) color = 'indigo';
+        else if (cat.includes('雑談')) color = 'cyan';
+        else {
+            // Simple consistent hashing for others
+            const colors = ['pink', 'rose', 'fuchsia', 'purple', 'sky', 'teal', 'lime', 'orange'];
+            let hash = 0;
+            for (let i = 0; i < cat.length; i++) hash += cat.charCodeAt(i);
+            color = colors[hash % colors.length];
+        }
+
+        // More visible style: solid bg when checked, brighter border
+        return `peer-checked:bg-${color}-600 peer-checked:border-${color}-400 peer-checked:text-white border-slate-700 text-slate-300 hover:bg-white/5 hover:border-${color}-500/50 hover:text-${color}-200 peer-checked:shadow-[0_0_15px_rgba(255,255,255,0.1)]`;
     };
+
+    // Ensure 5 Powers order if they exist, then others
+    const fivePowers = ['貯める', '稼ぐ', '増やす', '守る', '使う'];
+    const sortedCategories = [
+        ...fivePowers.filter(c => categories.includes(c)),
+        ...categories.filter(c => !fivePowers.includes(c))
+    ];
 
     const allOptions = [
         { value: 'all', label: 'ランダム' },
-        ...categories.map(c => ({ value: c, label: c }))
+        ...sortedCategories.map(c => ({ value: c, label: c }))
     ];
 
     return (
@@ -43,11 +61,10 @@ export function CategorySelector({ selected, onSelect, disabled, categories }: P
                         className="peer sr-only"
                     />
                     <span className={`
-            inline-block px-4 py-1.5 rounded-full text-sm font-bold border
-            transition-all duration-300 ease-out
-            bg-white/5 
-            group-hover:bg-white/10
-            peer-checked:scale-105 peer-checked:text-white peer-checked:shadow-[0_0_10px_rgba(255,255,255,0.2)]
+            inline-block px-4 py-2 rounded-full text-base font-bold border-2
+            transition-all duration-200 ease-out
+            bg-black/20 backdrop-blur-sm
+            peer-checked:scale-105 
             peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
             ${getColorClass(cat.value)}
           `}>

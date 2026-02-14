@@ -14,18 +14,32 @@ export function useGacha() {
     const [historyItems, setHistoryItems] = useState<Topic[]>([]); // Display objects
     const [isLoading, setIsLoading] = useState(true);
     const [isSpinning, setIsSpinning] = useState(false);
-    const [result, setResult] = useState<Topic | null>(null);
+    const [result, setResult] = useState<Topic[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [likedIds, setLikedIds] = useState<string[]>([]);
+    const [likedCounts, setLikedCounts] = useState<Record<string, number>>({});
 
     // Initialize likes from localStorage
     useEffect(() => {
-        const storedLikes = localStorage.getItem('zatsudan_likes');
-        if (storedLikes) {
+        const storedLikesV2 = localStorage.getItem('zatsudan_likes_v2');
+        if (storedLikesV2) {
             try {
-                setLikedIds(JSON.parse(storedLikes));
+                setLikedCounts(JSON.parse(storedLikesV2));
             } catch (e) {
-                console.error("Failed to parse likes", e);
+                console.error("Failed to parse likes v2", e);
+            }
+        } else {
+            // Migration from v1
+            const storedLikesV1 = localStorage.getItem('zatsudan_likes');
+            if (storedLikesV1) {
+                try {
+                    const ids: string[] = JSON.parse(storedLikesV1);
+                    const newCounts: Record<string, number> = {};
+                    ids.forEach(id => { newCounts[id] = 1; });
+                    setLikedCounts(newCounts);
+                    localStorage.setItem('zatsudan_likes_v2', JSON.stringify(newCounts));
+                } catch (e) {
+                    console.error("Failed to migrate likes v1", e);
+                }
             }
         }
     }, []);
@@ -44,9 +58,10 @@ export function useGacha() {
                     complete: (results) => {
                         const parsed = results.data.map((row: any, index: number) => ({
                             id: (row.ID || row.id || row["ネタID"] || `auto-${index + 1}`).toString(),
-                            category: (row.Category || row.category || row["カテゴリ"] || "未分類").trim(),
-                            text: (row.Text || row.text || row["ネタ内容"] || "").trim(),
-                            enabled: (row.Enabled || row.enabled || "").toString().toUpperCase() === 'TRUE'
+                            category: (row.Category || row.category || row["カテゴリ"] || row[0] || "未分類").trim(), // A列
+                            text: (row.Text || row.text || row["ネタ内容"] || row[1] || "").trim(), // B列
+                            enabled: (row.Enabled || row.enabled || "TRUE").toString().toUpperCase() === 'TRUE',
+                            selectionCount: parseInt(row.Count || row.count || row["選択回数"] || row[2] || "0", 10) // C列
                         })) as Topic[];
 
                         const validTopics = parsed.filter(t => t.text);
@@ -83,17 +98,24 @@ export function useGacha() {
         loadData();
     }, []);
 
-    const toggleLike = useCallback((id: string) => {
-        setLikedIds(prev => {
-            const next = prev.includes(id)
-                ? prev.filter(lid => lid !== id)
-                : [...prev, id];
-            localStorage.setItem('zatsudan_likes', JSON.stringify(next));
-            return next;
+    const cycleLike = useCallback((id: string) => {
+        setLikedCounts(prev => {
+            const current = prev[id] || 0;
+            const next = current >= 3 ? 0 : current + 1;
+
+            const newCounts = { ...prev };
+            if (next === 0) {
+                delete newCounts[id];
+            } else {
+                newCounts[id] = next;
+            }
+
+            localStorage.setItem('zatsudan_likes_v2', JSON.stringify(newCounts));
+            return newCounts;
         });
     }, []);
 
-    const spin = useCallback((categoryFilter: CategoryFilter) => {
+    const spin = useCallback((categoryFilter: CategoryFilter, count: number = 2) => {
         if (topics.length === 0) return;
 
         setIsSpinning(true);
@@ -110,15 +132,20 @@ export function useGacha() {
                 candidates = candidates.filter(t => t.category === categoryFilter);
             }
 
-            // 3. Fallback if no candidates
-            if (candidates.length === 0) {
+            // 3. Fallback if no candidates (try removing history filter)
+            if (candidates.length < count) {
                 const allInCategory = topics.filter(t =>
                     t.enabled && (categoryFilter === 'all' || t.category === categoryFilter)
                 );
 
-                if (allInCategory.length > 0) {
+                if (allInCategory.length >= count) {
+                    // If we have enough topics overall, reset history partially or fully
                     setHistory([]);
                     candidates = allInCategory;
+                } else if (allInCategory.length > 0) {
+                    // Not enough topics even after reset, just take all
+                    candidates = allInCategory;
+                    setHistory([]);
                 } else {
                     setError("このカテゴリのネタはまだありません！");
                     setIsSpinning(false);
@@ -126,22 +153,30 @@ export function useGacha() {
                 }
             }
 
-            // 4. Random selection
-            const randomIndex = Math.floor(Math.random() * candidates.length);
-            const picked = candidates[randomIndex];
+            // 4. Random selection of N items
+            // Fisher-Yates shuffle
+            const shuffled = [...candidates];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            const picked = shuffled.slice(0, Math.min(count, shuffled.length));
 
             setResult(picked);
 
             // Update history
+            const pickedIds = picked.map(p => p.id);
             setHistory(prev => {
-                const newHistory = [...prev, picked.id];
-                if (newHistory.length > HISTORY_LIMIT) newHistory.shift();
+                const newHistory = [...prev, ...pickedIds];
+                // Keep history limit reasonable (e.g. 50 items)
+                if (newHistory.length > 50) return newHistory.slice(-50);
                 return newHistory;
             });
 
             setHistoryItems(prev => {
-                const newItems = [picked, ...prev];
-                if (newItems.length > 5) newItems.pop();
+                const newItems = [...picked, ...prev];
+                if (newItems.length > 10) return newItems.slice(0, 10);
                 return newItems;
             });
 
@@ -158,8 +193,8 @@ export function useGacha() {
         result,
         error,
         historyItems,
-        likedIds,
+        likedCounts,
         spin,
-        toggleLike
+        cycleLike
     };
 }

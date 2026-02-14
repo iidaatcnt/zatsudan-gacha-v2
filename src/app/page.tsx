@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -8,159 +7,106 @@ import { CategoryFilter } from '@/types';
 
 export default function Home() {
   const [category, setCategory] = useState<CategoryFilter>('all');
+  // Fixed to 2 topics as per requirement
+  const count = 2;
+
   const {
     categories,
     isSpinning,
     result,
     error,
     historyItems,
-    likedIds,
-    spin,
-    toggleLike
+    spin
   } = useGacha();
 
   const handleSpin = () => {
-    spin(category);
-  };
-
-  // バッジの色判定ヘルパー
-  const getBadgeColor = (cat: string) => {
-    if (cat.includes('貯める')) return 'bg-red-500/20 text-red-300 border-red-500/40';
-    if (cat.includes('稼ぐ')) return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-    if (cat.includes('増やす')) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-    if (cat.includes('守る')) return 'bg-violet-500/20 text-violet-300 border-violet-500/40';
-    if (cat.includes('使う')) return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-    if (cat.includes('リベ')) return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
-    return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
+    spin(category, count);
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
-      {/* Background Globes */}
-      <div className="background-globes">
-        <div className="globe globe-1"></div>
-        <div className="globe globe-2"></div>
-        <div className="globe globe-3"></div>
-      </div>
+    <main className="min-h-screen flex flex-col items-center pt-20 px-4 pb-12 font-sans bg-white text-slate-800">
 
-      <div className="w-full max-w-md flex flex-col gap-6">
+      <div className="w-full max-w-2xl flex flex-col items-center gap-8">
 
         {/* Header */}
-        <header className="text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none mb-2">
-            雑談<br />
-            <span className="accent-text">ガチャ v3</span>
+        <header className="text-center mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+            雑談ネタガチャ
           </h1>
-
         </header>
 
-        {/* Machine Card */}
-        <div className="bg-[var(--color-card-bg)] backdrop-blur-md border border-[var(--color-card-border)] rounded-3xl p-6 md:p-8 shadow-xl flex flex-col gap-6">
+        {/* Controls */}
+        <div className="w-full flex flex-col items-center gap-6">
 
-          {/* Display Window */}
-          <div className="bg-black/30 border border-white/5 rounded-2xl p-8 min-h-[220px] flex flex-col items-center justify-center text-center relative overflow-hidden transition-all">
+          <button
+            onClick={handleSpin}
+            disabled={isSpinning}
+            className="btn-primary w-full max-w-sm py-4 rounded-full text-xl font-bold flex justify-center items-center gap-3 shadow-md disabled:opacity-70 disabled:cursor-not-allowed transition-transform active:scale-95"
+          >
+            <span className="text-2xl">🎲</span>
+            <span>{isSpinning ? '選定中...' : 'ガチャ（2ネタ）'}</span>
+          </button>
 
-            {/* Status Badge */}
-            <div className={`
-              mb-4 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border transition-all duration-300
-              ${isSpinning ? 'bg-white/10 text-white border-white/20' :
-                error ? 'bg-red-500/20 text-red-500 border-red-500/50' :
-                  result ? getBadgeColor(result.category) :
-                    'bg-white/10 text-slate-400 border-white/10'}
-            `}>
-              {isSpinning ? 'CHOOSING...' : error ? 'ERROR' : result ? result.category : 'READY'}
-            </div>
-
-            {/* Content Text */}
-            <div className={`
-              w-full flex flex-col items-center gap-4 transition-all duration-500
-              ${isSpinning ? 'opacity-50 scale-95 blur-[2px]' : 'opacity-100 scale-100 blur-0'}
-              ${result ? 'animate-[popIn_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)]' : ''}
-            `}>
-              {error ? (
-                <span className="text-red-400 text-base font-normal">{error}</span>
-              ) : result ? (
-                <>
-                  <div className="text-xl md:text-2xl font-bold leading-relaxed">
-                    {result.text}
-                  </div>
-                  {/* Like Button */}
-                  <button
-                    onClick={() => toggleLike(result.id)}
-                    className="mt-2 p-2 rounded-full hover:bg-white/10 transition-colors group"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill={likedIds.includes(result.id) ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      className={`w-6 h-6 transition-all ${likedIds.includes(result.id)
-                        ? "text-pink-500 scale-110"
-                        : "text-slate-500 group-hover:text-pink-400"
-                        }`}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                </>
-              ) : (
-                <span className="text-slate-500 text-base font-normal">
-                  ボタンを押して<br />話題をスキャン...
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div>
+          {/* Category Selector (Optional, kept simple) */}
+          <div className="w-full max-w-md opacity-80 hover:opacity-100 transition-opacity">
             <CategorySelector
               selected={category}
               onSelect={setCategory}
               disabled={isSpinning}
               categories={categories}
             />
-
-            <button
-              onClick={handleSpin}
-              disabled={isSpinning}
-              className="group relative w-full py-4 rounded-2xl btn-gradient text-white font-bold text-lg tracking-wide shadow-lg shadow-purple-500/30 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/50 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                {isSpinning ? '選定中...' : '話題を生成する'}
-              </span>
-              {/* Shine Effect */}
-              <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] animate-[shine_6s_infinite]" />
-            </button>
           </div>
+        </div>
+
+        {/* Result Area */}
+        <div className="w-full bg-white rounded-2xl border border-slate-200 card-shadow p-6 md:p-8 min-h-[200px] flex flex-col gap-6">
+          {error ? (
+            <div className="text-red-500 font-bold text-center py-8">{error}</div>
+          ) : result.length > 0 ? (
+            <div className="flex flex-col gap-8">
+              {result.map((topic, index) => (
+                <div
+                  key={topic.id}
+                  className={`flex flex-col gap-1 ${index !== result.length - 1 ? 'border-b border-dashed border-slate-200 pb-8' : ''} animate-[popIn_0.3s_ease-out]`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <p className="text-lg md:text-2xl font-bold text-slate-800 leading-relaxed">
+                    {topic.text}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-slate-500">
+                      カテゴリ: {topic.category}
+                    </span>
+                    {topic.selectionCount !== undefined && topic.selectionCount >= 0 && (
+                      <span className="text-xs text-slate-400 opacity-70">
+                        (選出: {topic.selectionCount + 1}回目)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+              <span className="text-4xl opacity-20">💭</span>
+              <p>ボタンを押して話題を生成してください</p>
+            </div>
+          )}
         </div>
 
         {/* History Section */}
         {historyItems.length > 0 && (
-          <section className="bg-[var(--color-card-bg)] backdrop-blur-sm border border-[var(--color-card-border)] rounded-3xl p-6">
-            <h2 className="text-xs uppercase tracking-wider text-slate-500 mb-4 font-en">History</h2>
-            <ul className="flex flex-col gap-3">
-              {historyItems.map((item, index) => (
-                <li
-                  key={`${item.id}-${index}`}
-                  className={`
-                    flex justify-between items-center p-3 rounded-xl bg-white/5 border-l-2 text-sm
-                    animate-[popIn_0.3s_ease-out]
-                    ${getBadgeColor(item.category).replace('text-', 'border-l-')}
-                  `}
-                >
-                  <span className="truncate mr-4 opacity-90">{item.text}</span>
-                  <div className="flex items-center gap-2">
-                    {likedIds.includes(item.id) && (
-                      <span className="text-pink-500">♥</span>
-                    )}
-                    <span className="text-[10px] opacity-60 whitespace-nowrap uppercase tracking-tighter">
-                      {item.category}
-                    </span>
-                  </div>
+          <div className="w-full max-w-2xl mt-8">
+            <h2 className="text-sm font-bold text-slate-900 mb-4 pb-2">直前の履歴</h2>
+            <ul className="flex flex-col gap-1">
+              {historyItems.slice(0, 10).map((item, index) => (
+                <li key={`${item.id}-${index}`} className="text-sm text-slate-600 flex items-start gap-2">
+                  <span className="text-xs text-slate-400 whitespace-nowrap mt-0.5 w-24 overflow-hidden text-ellipsis text-right">[{item.category}]</span>
+                  <span className="flex-1">{item.text}</span>
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
         )}
 
       </div>
